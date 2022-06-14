@@ -99,9 +99,11 @@ def pop_classify(filepath):
         city = []
         with open(folder, 'r', encoding='utf-8', errors='ignore') as f:
             s = set()
+            m = set()
             for line in f:
                 line = line.split(";")
                 if line[1] == '122':
+                    m.add(line[19])
                     continue
                 elif line[6] == "":  #删除IP为空的行
                     continue
@@ -110,6 +112,8 @@ def pop_classify(filepath):
                 elif line[19] not in s:  #对processQ去重，只保留第一个
                     s.add(line[19])
                 elif line[19] in s:
+                    continue
+                elif line[19] in m:  #和122一样的Q的行去重
                     continue
                 else:
                     country.append(line[7])
