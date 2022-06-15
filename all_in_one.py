@@ -3,6 +3,7 @@ from typing import Callable, List
 from sklearn import preprocessing
 import pandas as pd
 import numpy as np
+import math
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Dense
@@ -12,6 +13,9 @@ from sklearn.preprocessing import StandardScaler
 import os
 from scipy.signal import argrelextrema
 from sklearn.neighbors import KernelDensity
+
+web_header ="abroad	behavior	yyyyMMdd	hhmmss	account	domainName	IP	country	province	city	operator	netAffiliation	institute	latitude	longitude	result	osLanguage	os	friendlyName	locale	timestamp	dateTime	requestURL	opTime	Q	fid	fromAddress	flag	read	attachId	keywords	requestVar	voice	pref	fn	group	id	part	requestReadReceipt	bcc	cc	to	from	size	ids	transmitted	mode	usedCapacityKB	mid	msid	deleted	name	type	returnInfo	saveSentCopy	content	isHtml	subject	action	value	length	lable	rev	respTime	target	field	operand	id5	id4	id3	id2	id1	unreadMessageSize	unreadMessageCount	messageSize	messageCount	resultVar	creationDate	resultOthers	cnt	status	email	imapFolder	sentTInfo	ips	uuid	folderName	fileName	shareLink	label"
+web_header = [item.strip() for item in web_header]
 
 mta_header = "abroad	behavior	yyyyMMdd	hhmmss	account	domainName	IP	country	province	city	operator	netAffiliation	institute	latitude	longitude	ssl	rcpt	state	size	keywords	Q	Tid	fromDN	AuthFailCnt	optimes	errinfo	origip	Xmailer	SenderEmail	Local	org_unit_id	lrcptcnt	rrcptcnt	LmtpRcptCnt	DataRuleID	Score	AttachCnt	DataFngCnt	DataSFngCnt	DKimVerifyResult	Subject	SubjectCnt	Handle	Content	ttime	UsrQuarterCnt	UsrTodayCnt	conn	region	quarterCnt	todayCnt	todayRcptCnt	hangup	errStat	delivered	userSendInterval	helo	mdRet	errCnt	deliveredCnt	domainQuarterCnt	domainTodayCnt	MailCnt".split("\t")
 mta_header.append("Label")
@@ -155,6 +159,46 @@ def _predict(account_list: List, result_path: str, data_path: str, preprocess_me
 
     file.to_csv(result_path, index=False,encoding="utf-8")
 
+def _web_preprocess(raw_data: pd.DataFrame) -> pd.DataFrame:
+    df = pd.DataFrame()
+    df['abroad'] = raw_data['abroad'].apply(lambda x:1 if x else 0)
+
+    # 日期分为月 日
+    df['MM'] = raw_data['yyyyMMdd'].apply(lambda x:int(x.split("-")[1]))
+    df['dd'] = raw_data['yyyyMMdd'].apply(lambda x:int(x.split("-")[2]))
+
+    # 时间分为时 分 秒
+    df['hh'] = raw_data['hhmmss'].apply(lambda x:int(x.split(":")[0]))
+    df['mm'] = raw_data['hhmmss'].apply(lambda x:int(x.split(":")[1]))
+    df['ss'] = raw_data['hhmmss'].apply(lambda x:int(x.split(":")[2]))
+
+    # IP分四段
+    df["ip1"] = raw_data['IP'].apply(lambda x:int(x.split(".")[0]))
+    df["ip2"] = raw_data['IP'].apply(lambda x:int(x.split(".")[1]))
+    df["ip3"] = raw_data['IP'].apply(lambda x:int(x.split(".")[2]))
+    df["ip4"] = raw_data['IP'].apply(lambda x:int(x.split(".")[3]))
+
+
+    for name, col in raw_data.iteritems():
+        if name in ["abroad", "yyyyMMdd", "hhmmss", "IP","domainName", "result", "locale", "timestamp", "dateTime", "requestVar", "voice", "pref", "ids", "rev", "creationDate"]:
+            continue  #以上是不需要的特征
+        if col.isnull().all(): # 全是空的列赋0
+            df[name] = 0
+        if name in ["fid","flag","read","fn","group","name","type","saveSentCopy","content","subject","value","length","lable","operand","id5","id4","id3","id2","id1","resultVar","resultOthers","cnt","status","email","imapFolder","sentTInfo","ips","uuid","folderName","fileName","shareLink"]:
+            df[name] = raw_data[name].apply(lambda x:0 if math.isnan(x) else 1)  #将以上特征进行01处理，有值的标为1，nan的标记为0
+        elif col.dtype == object:  # 将每个文件中的列特征值转换成数字
+            if name in ["account","country", "province", "city", "operator", "netAffiliation", "institute", "osLanguage", "os", "friendlyName", "requestURL","fromAddress","attachId","keywords","id","requestReadReceipt","bcc","cc","to","from","mode","mid","msid","deleted","returnInfo","isHtml","action","target","field"]:
+                enc = preprocessing.LabelEncoder()
+                df[name] = enc.fit_transform(col.apply(str))
+        else:
+            df[name] = col
+
+    # nan值补为0
+    df.fillna(0, inplace=True)
+    return df
+
+
+
 def _mta_preprocess(raw_data: pd.DataFrame) -> pd.DataFrame:
     df = pd.DataFrame()
     df['abroad'] = raw_data['abroad'].apply(lambda x:1 if x else 0)
@@ -265,6 +309,15 @@ def _pop_preprocess(raw_data: pd.DataFrame) -> pd.DataFrame:
     df.fillna(0, inplace=True)
     return df
 
+
+def web_predict(account_list, result_path, data_path):
+    _predict(account_list=account_list,
+             result_path=result_path,
+             data_path=data_path,
+             preprocess_method=_web_preprocess,
+             header=web_header)
+
+
 def mta_predict(account_list, result_path, data_path):
     _predict(account_list=account_list,
              result_path=result_path,
@@ -290,8 +343,8 @@ def pop_predict(account_list, result_path, data_path):
     
 if __name__ == "__main__":
     
-    account_list = ['chaifj@cnic.cn.csv', 'csdata@cnic.cn.csv', 'cy@cnic.cn.csv']
-    mta_predict(
+    account_list = ['laisuomei2020@sibcb.ac.cn_2.csv', 'leiyb@itpcas.ac.cn_2.csv', 'maliang@ioz.ac.cn_2.csv']
+    web_predict(
         account_list=account_list,
-        result_path="./result.csv"
-    )
+        result_path=r"C:\Users\lichangUCAS\Desktop\许老师",
+        data_path=r"E:\sectry\web")
