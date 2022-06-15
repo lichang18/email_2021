@@ -14,7 +14,7 @@ import os
 from scipy.signal import argrelextrema
 from sklearn.neighbors import KernelDensity
 
-web_header ="abroad	behavior	yyyyMMdd	hhmmss	account	domainName	IP	country	province	city	operator	netAffiliation	institute	latitude	longitude	result	osLanguage	os	friendlyName	locale	timestamp	dateTime	requestURL	opTime	Q	fid	fromAddress	flag	read	attachId	keywords	requestVar	voice	pref	fn	group	id	part	requestReadReceipt	bcc	cc	to	from	size	ids	transmitted	mode	usedCapacityKB	mid	msid	deleted	name	type	returnInfo	saveSentCopy	content	isHtml	subject	action	value	length	lable	rev	respTime	target	field	operand	id5	id4	id3	id2	id1	unreadMessageSize	unreadMessageCount	messageSize	messageCount	resultVar	creationDate	resultOthers	cnt	status	email	imapFolder	sentTInfo	ips	uuid	folderName	fileName	shareLink	Label"
+web_header ="abroad	behavior	yyyyMMdd	hhmmss	account	domainName	IP	country	province	city	operator	netAffiliation	institute	latitude	longitude	result	osLanguage	os	friendlyName	locale	timestamp	dateTime	requestURL	opTime	Q	fid	fromAddress	flag	read	attachId	keywords	requestVar	voice	pref	fn	group	id	part	requestReadReceipt	bcc	cc	to	from	size	ids	transmitted	mode	usedCapacityKB	mid	msid	deleted	name	type	returnInfo	saveSentCopy	content	isHtml	subject	action	value	length	lable	rev	respTime	target	field	operand	id5	id4	id3	id2	id1	unreadMessageSize	unreadMessageCount	messageSize	messageCount	resultVar	creationDate	resultOthers	cnt	status	email	imapFolder	sentTInfo	ips	uuid	folderName	fileName	shareLink	Label".split("\t")
 web_header = [item.strip() for item in web_header]
 
 mta_header = "abroad	behavior	yyyyMMdd	hhmmss	account	domainName	IP	country	province	city	operator	netAffiliation	institute	latitude	longitude	ssl	rcpt	state	size	keywords	Q	Tid	fromDN	AuthFailCnt	optimes	errinfo	origip	Xmailer	SenderEmail	Local	org_unit_id	lrcptcnt	rrcptcnt	LmtpRcptCnt	DataRuleID	Score	AttachCnt	DataFngCnt	DataSFngCnt	DKimVerifyResult	Subject	SubjectCnt	Handle	Content	ttime	UsrQuarterCnt	UsrTodayCnt	conn	region	quarterCnt	todayCnt	todayRcptCnt	hangup	errStat	delivered	userSendInterval	helo	mdRet	errCnt	deliveredCnt	domainQuarterCnt	domainTodayCnt	MailCnt".split("\t")
@@ -185,7 +185,7 @@ def _web_preprocess(raw_data: pd.DataFrame) -> pd.DataFrame:
         if col.isnull().all(): # 全是空的列赋0
             df[name] = 0
         if name in ["fid","flag","read","fn","group","name","type","saveSentCopy","content","subject","value","length","lable","operand","id5","id4","id3","id2","id1","resultVar","resultOthers","cnt","status","email","imapFolder","sentTInfo","ips","uuid","folderName","fileName","shareLink"]:
-            df[name] = raw_data[name].apply(lambda x:0 if math.isnan(x) else 1)  #将以上特征进行01处理，有值的标为1，nan的标记为0
+            df[name] = [0 if item else 1 for item in col.isnull()]  #将以上特征进行01处理，有值的标为1，nan的标记为0
         elif col.dtype == object:  # 将每个文件中的列特征值转换成数字
             if name in ["account","country", "province", "city", "operator", "netAffiliation", "institute", "osLanguage", "os", "friendlyName", "requestURL","fromAddress","attachId","keywords","id","requestReadReceipt","bcc","cc","to","from","mode","mid","msid","deleted","returnInfo","isHtml","action","target","field"]:
                 enc = preprocessing.LabelEncoder()
