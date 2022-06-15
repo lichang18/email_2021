@@ -109,15 +109,15 @@ def pop_classify(filepath):
                     continue
                 elif line[19] == "":  #删除processQ为空的行
                     continue
-                elif line[19] not in s:  #对processQ去重，只保留第一个
-                    s.add(line[19])
-                elif line[19] in s:
-                    continue
                 elif line[19] in m:  #和122一样的Q的行去重
                     continue
-                else:
+                elif line[19] not in s:  #对processQ去重，只保留第一个
+                    s.add(line[19])
                     country.append(line[7])
                     city.append(line[9])
+                elif line[19] in s:
+                    continue
+                
             #print(s)
             country_most = Counter(country).most_common(1)
             city_most = Counter(city).most_common(1)
