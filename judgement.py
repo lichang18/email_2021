@@ -149,18 +149,190 @@ def judge_statistics(data_path: str):
                     "label1": len(df.loc[df["Label"] == 1]),
                 })
     return pd.DataFrame.from_records(res)
+
+def judge_pop(data_path: str, fail_behavior: List = ['122']) -> Set:
+    bad_ip = set()
+    # for list1
+    print("list1...")
+    for file in os.listdir(os.path.join(data_path, "list1")):
+        if file.endswith(".csv"):
+
+            file_path = os.path.join(os.path.join(data_path, "list1"), file)
+            df = pd.read_csv(file_path,index_col=None,header=0,encoding="utf-8")
+            df["success"] = df["behavior"].apply(lambda x: x not in fail_behavior)
+
+            for ip in df.loc[(df["success"] == False) & (df["predict"] == 1), "IP"].unique().tolist():
+                if len(ip) > 4:
+                    bad_ip.add(ip)
+            for ip in df.loc[(df["abroad"] == True) & (df["predict"] == 1), "IP"].unique().tolist():
+                if len(ip) > 4:
+                    bad_ip.add(ip)
+            print(file_path)
+            mp = dict()
+            for n, g in df.loc[df["success"] == True].groupby("account"):
+                op = set(["教育网", "科技网"])
+                city = []
+                operator = []
+                for q, gg in g.groupby("processQ"):
+                    if len(q) < 3:
+                        continue
+                    if len(gg["city"].value_counts()) > 0:
+                        city.append(gg["city"].value_counts().idxmax())
+                    if len(gg["operator"].value_counts()) > 0:
+                        operator.append(gg["operator"].value_counts().idxmax())
+                if len(pd.value_counts(operator)) > 0:
+                    op.add(pd.value_counts(operator).idxmax())
+                mp[n] = {
+                    "city": pd.value_counts(city).idxmax(),
+                    "operator": op
+                }
+            
+            df["judge"] = df["predict"]
+            for i, line in df.iterrows():
+                if line["predict"] == 0:
+                    continue
+                if line["success"] == False:
+                    continue
+                if line["abroad"] == True:
+                    continue
+                if line["city"] == mp[line["account"]]["city"]:
+                    df.loc[i, "judge"] = 0
+                    continue
+                if line["operator"] in mp[line["account"]]["operator"]:
+                    df.loc[i, "judge"] = 0
+                    continue
+                df.loc[i, "judge"] = 2
+            del df["success"]
+            
+            df.to_csv(file_path, index=False,encoding="utf-8")
+            del df
+            
+    # list2
+    print("list2...")
+    for file in os.listdir(os.path.join(data_path, "list2")):
+        if file.endswith(".csv"):
+            file_path = os.path.join(os.path.join(data_path, "list2"), file)
+            df = pd.read_csv(file_path,index_col=None,header=0,encoding="utf-8")
+            df["success"] = df["behavior"].apply(lambda x: x not in fail_behavior)
+
+            for ip in df.loc[(df["success"] == False) & (df["predict"] == 1), "IP"].unique().tolist():
+                if len(ip) > 4:
+                    bad_ip.add(ip)
+            for ip in df.loc[(df["abroad"] == True) & (df["predict"] == 1), "IP"].unique().tolist():
+                if len(ip) > 4:
+                    bad_ip.add(ip)
+
+            mp = dict()
+            for n, g in df.loc[df["success"] == True].groupby("account"):
+                op = set(["教育网", "科技网"])
+                city = []
+                operator = []
+                for q, gg in g.groupby("processQ"):
+                    if len(q) < 3:
+                        continue
+                    if len(gg["city"].value_counts()) > 0:
+                        city.append(gg["city"].value_counts().idxmax())
+                    if len(gg["operator"].value_counts()) > 0:
+                        operator.append(gg["operator"].value_counts().idxmax())
+                op.add(pd.value_counts(operator).idxmax())
+                mp[n] = {
+                    "city": pd.value_counts(city).idxmax(),
+                    "operator": op
+                }
+            
+            df["judge"] = df["predict"]
+            for i, line in df.iterrows():
+                if line["predict"] == 0:
+                    continue
+                if line["success"] == False:
+                    continue
+                if line["abroad"] == True:
+                    continue
+                if line["city"] == mp[line["account"]]["city"]:
+                    df.loc[i, "judge"] = 0
+                    continue
+                if line["operator"] in mp[line["account"]]["operator"]:
+                    df.loc[i, "judge"] = 0
+                    continue
+                df.loc[i, "judge"] = 2
+            del df["success"]
+            
+            df.to_csv(file_path, index=False,encoding="utf-8")
+            del df
+    
+    # list3
+    print("list3...")
+    for file in os.listdir(os.path.join(data_path, "list3")):
+        if file.endswith(".csv"):
+            file_path = os.path.join(os.path.join(data_path, "list3"), file)
+            df = pd.read_csv(file_path,index_col=None,header=0,encoding="utf-8")
+            df["success"] = df["behavior"].apply(lambda x: x not in fail_behavior)
+
+            for ip in df.loc[(df["success"] == False) & (df["predict"] == 1), "IP"].unique().tolist():
+                if len(ip) > 4:
+                    bad_ip.add(ip)
+            df["judge"] = df["predict"]
+            for i, line in df.iterrows():
+                if line["predict"] == 0:
+                    continue
+                if line["success"] == False:
+                    continue
+                df.loc[i, "judge"] = 2
+            del df["success"]
+            
+            df.to_csv(file_path, index=False,encoding="utf-8")
+            del df
+    
+    # list4
+    print("list4...")
+    for file in os.listdir(os.path.join(data_path, "list4")):
+        if file.endswith(".csv"):
+            file_path = os.path.join(os.path.join(data_path, "list4"), file)
+            df = pd.read_csv(file_path,index_col=None,header=0,encoding="utf-8")
+
+            for ip in df.loc[df["predict"] == 1, "IP"].unique().tolist():
+                if len(ip) > 4:
+                    bad_ip.add(ip)
+            
+    return bad_ip
             
 
 if __name__ == "__main__":
     
-    data_path = "../../result/imap_with_cls_thd"
+    # data_path = "../../result/imap_with_cls_thd"
     
-    fail_behaavior = ['2']
+    # fail_behaavior = ['2']
     
-    mali_ip_set = judge_imap(data_path=data_path)
+    # mali_ip_set = judge_imap(data_path=data_path)
     
-    with open("../../ip/imap0.txt", "w", encoding="utf-8") as f:
+    # with open("../../ip/imap0.txt", "w", encoding="utf-8") as f:
+    #     for item in mali_ip_set:
+    #         f.write(item + "\n")
+    
+    # judge_statistics(data_path).to_csv("../../result/some_tmp/imap.csv", index=False)
+    
+    ## mta 
+    # data_path = "../../result/mta_with_cls_thd"
+    
+    # fail_behaavior = ['8', '79', '84']
+    
+    # mali_ip_set = judge_imap(data_path=data_path, fail_behavior=fail_behaavior)
+    
+    # with open("../../ip/mta0.txt", "w", encoding="utf-8") as f:
+    #     for item in mali_ip_set:
+    #         f.write(item + "\n")
+    
+    # judge_statistics(data_path).to_csv("../../result/some_tmp/mta.csv", index=False)
+    
+    ## pop
+    data_path = "../../result/pop_with_cls_thd"
+    
+    fail_behaavior = ['122']
+    
+    mali_ip_set = judge_pop(data_path=data_path, fail_behavior=fail_behaavior)
+    
+    with open("../../ip/pop0.txt", "w", encoding="utf-8") as f:
         for item in mali_ip_set:
             f.write(item + "\n")
     
-    judge_statistics(data_path).to_csv("../../result/some_tmp/imap.csv", index=False)
+    judge_statistics(data_path).to_csv("../../result/some_tmp/pop.csv", index=False)
