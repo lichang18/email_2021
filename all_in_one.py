@@ -29,7 +29,7 @@ pop_header = "abroad	behavior	create_Date	time	account	domainName	IP	country	pro
 pop_header.append("Label")
 pop_header = [item.strip() for item in pop_header]
 
-def _predict(account_list: List, result_path: str, data_path: str, preprocess_method: Callable[[pd.DataFrame], pd.DataFrame], header: List):
+def _predict(account_list: List, result_path: str, data_path: str, preprocess_method: Callable[[pd.DataFrame], pd.DataFrame], header: List, model_name: str):
     file = pd.concat([pd.read_csv(os.path.join(data_path, account), encoding="utf-8", header=None, sep=";", names=header, index_col=False) for account in account_list])
     file.reset_index(inplace=True)
 
@@ -71,7 +71,7 @@ def _predict(account_list: List, result_path: str, data_path: str, preprocess_me
                         metrics=['mae'])
 
     # 模型保存为SofaSofa_model.h5，并开始训练模型
-    checkpointer = ModelCheckpoint(filepath="model.h1",
+    checkpointer = ModelCheckpoint(filepath=model_name,
                                 verbose=0,
                                 save_best_only=True)
     history = autoencoder.fit(X_train, X_train,
@@ -83,7 +83,7 @@ def _predict(account_list: List, result_path: str, data_path: str, preprocess_me
                             callbacks=[checkpointer]).history
 
     # 读取模型
-    autoencoder = load_model('model.h1')
+    autoencoder = load_model(model_name)
 
     # 利用训练好的autoencoder重建测试集
     pred_test = autoencoder.predict(X_test)
@@ -272,8 +272,11 @@ def _imap_preprocess(raw_data: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def _pop_preprocess(raw_data: pd.DataFrame) -> pd.DataFrame:
+    #删除IP和Q不存在的行
+    raw_data.dropna(axis=0, how="any", subset=["IP", "processQ"], inplace=True)
+    raw_data.reset_index(drop=True, inplace=True)
     df = pd.DataFrame()
-    df = df.dropna(axis='index', how='all', subset=[6,19])  #删除IP和Q不存在的行
+    
     df['abroad'] = raw_data['abroad'].apply(lambda x:1 if x else 0)
 
     # 日期分为月 日
@@ -315,7 +318,8 @@ def web_predict(account_list, result_path, data_path):
              result_path=result_path,
              data_path=data_path,
              preprocess_method=_web_preprocess,
-             header=web_header)
+             header=web_header,
+             model_name="web.h1")
 
 
 def mta_predict(account_list, result_path, data_path):
@@ -323,14 +327,16 @@ def mta_predict(account_list, result_path, data_path):
              result_path=result_path,
              data_path=data_path,
              preprocess_method=_mta_preprocess,
-             header=mta_header)
+             header=mta_header,
+             model_name="mta.h1")
     
 def imap_predict(account_list, result_path, data_path):
    _predict(account_list=account_list,
              result_path=result_path,
              data_path=data_path,
              preprocess_method=_imap_preprocess,
-             header=imap_header)
+             header=imap_header,
+             model_name="imap.h1")
     
 def pop_predict(account_list, result_path, data_path):
     
@@ -338,7 +344,8 @@ def pop_predict(account_list, result_path, data_path):
              result_path=result_path,
              data_path=data_path,
              preprocess_method=_pop_preprocess,
-             header=pop_header)
+             header=pop_header,
+             model_name="pop.h1")
     
     
 if __name__ == "__main__":
