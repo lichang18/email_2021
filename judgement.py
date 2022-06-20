@@ -234,7 +234,8 @@ def judge_pop(data_path: str, fail_behavior: List = ['122']) -> Set:
                         city.append(gg["city"].value_counts().idxmax())
                     if len(gg["operator"].value_counts()) > 0:
                         operator.append(gg["operator"].value_counts().idxmax())
-                op.add(pd.value_counts(operator).idxmax())
+                if len(pd.value_counts(operator)) > 0:
+                    op.add(pd.value_counts(operator).idxmax())
                 mp[n] = {
                     "city": pd.value_counts(city).idxmax(),
                     "operator": op
